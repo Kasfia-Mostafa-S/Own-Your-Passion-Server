@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+require("dotenv").config();
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -17,7 +17,7 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -25,28 +25,102 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const productCollection = client.db('electronicDB').collection('electronic');
+    const productCollection = client
+      .db("electronicDB")
+      .collection("electronic");
+
+    const cartCollection = client
+      .db("cartDB")
+      .collection("cart");
+
+      app.post("/cartBrand", async (req, res) => {
+        const newProducts = req.body;
+        const result = await cartCollection.insertOne(newProducts);
+        res.send(result);
+      });
+
+      app.get("/cartBrand/:id", async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await cartCollection.findOne(query);
+        res.send(result);
+      });
+
+
+    // app.get("/cartBrand", async (req, res) => {
+    //   const cursor = productCollection.fine();
+    //   const result = await cursor.toArray();
+    //   res.send(result);
+    // });
+
+    app.get("/cartProduct", async (req, res) => {
+      const cursor = cartCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+
+    app.get("/products", async (req, res) => {
+      const cursor = productCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+   
+    app.get("/products/:brandName", async (req, res) => {
+      const brandName = req.params.brandName;
+      const query = { brand : brandName };
+      const cursor = productCollection.filter(query);
+      const result = await cursor.toArray()
+      res.send(result);
+    });
+
+    app.get("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await productCollection.findOne(query);
+      res.send(result);
+    });
     
-app.get('/products', async(req,res)=>{
-  const cursor = productCollection.find();
-  const result = await cursor.toArray();
-  res.send(result);
-})
+    app.get("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await productCollection.findOne(query);
+      res.send(result);
+    });
+    
+    app.post("/products", async (req, res) => {
+      const newProducts = req.body;
+      const result = await productCollection.insertOne(newProducts);
+      res.send(result);
+    });
 
+   
 
-app.post('/products',async(req,res)=> {
-const newProducts = req.body
-console.log(newProducts)
-const result = await productCollection.insertOne(newProducts);
-res.send(result);
-})
-
-
-
+    app.put("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedProduct = req.body;
+      const products = {
+        $set: {
+          name: updatedProduct.name,
+          brand: updatedProduct.brand,
+          price: updatedProduct.price,
+          category: updatedProduct.category,
+          photo: updatedProduct.photo,
+          rating: updatedProduct.rating,
+        },
+      };
+      const result = await productCollection.updateOne(filter,products,options)
+      res.send(result)
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -54,12 +128,10 @@ res.send(result);
 }
 run().catch(console.dir);
 
-
 app.get("/", (req, res) => {
   res.send("Products available");
 });
 
-app.listen(port,() => {
-  console.log
-  (`Product server is running on port : ${port}`);
+app.listen(port, () => {
+  console.log(`Product server is running on port : ${port}`);
 });
