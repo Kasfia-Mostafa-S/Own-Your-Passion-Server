@@ -29,6 +29,7 @@ async function run() {
       .db("electronicDB")
       .collection("electronic");
 
+
     const cartCollection = client
       .db("cartDB")
       .collection("cart");
@@ -39,20 +40,19 @@ async function run() {
         res.send(result);
       });
 
-      app.get("/cartBrand/:id", async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await cartCollection.findOne(query);
-        res.send(result);
-      });
-
-
-    app.get("/cartProduct", async (req, res) => {
+    app.get("/cartBrands", async (req, res) => {
       const cursor = cartCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     });
 
+    app.delete('/cartBrands/:id', async(req,res)=> {
+      const id = req.params.id
+      console.log("DELETE", id)
+      const query = {_id : new ObjectId(id)}
+      const result = await cartCollection.deleteOne(query)
+      res.send(result)
+   })
 
     app.get("/products", async (req, res) => {
       const cursor = productCollection.find();
@@ -61,10 +61,10 @@ async function run() {
     });
 
    
-    app.get("/products/:brandName", async (req, res) => {
+    app.get("/productB/:brandName", async (req, res) => {
       const brandName = req.params.brandName;
       const query = { brand : brandName };
-      const cursor = productCollection.filter(query);
+      const cursor = productCollection.find(query);
       const result = await cursor.toArray()
       res.send(result);
     });
@@ -109,6 +109,8 @@ async function run() {
       const result = await productCollection.updateOne(filter,products,options)
       res.send(result)
     });
+
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
